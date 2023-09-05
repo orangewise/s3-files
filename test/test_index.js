@@ -1,11 +1,11 @@
-var sinon = require('sinon')
-var t = require('tap')
-var PassThrough = require('stream').PassThrough
+const sinon = require('sinon')
+const t = require('tap')
+const PassThrough = require('stream').PassThrough
 
-var proxyquire = require('proxyquire')
-var s3Stub = {}
-var s3Files = proxyquire('../s3-files.js', {
-  'aws-sdk': { 'S3': sinon.stub().returns(s3Stub) }
+const proxyquire = require('proxyquire')
+const s3Stub = {}
+const s3Files = proxyquire('../s3-files.js', {
+  '@aws-sdk/client-s3': { S3Client: sinon.stub().returns(s3Stub) }
 })
 
 // Connect
@@ -14,12 +14,12 @@ s3Files.connect({})
 t.type(s3Files.s3, 'object')
 
 // Keystream
-var keyStream = s3Files.createKeyStream('folder', undefined)
+const keyStream = s3Files.createKeyStream('folder', undefined)
 t.same(keyStream, null)
 
 t.test('keyStream', function (child) {
-  var keyStream = s3Files.createKeyStream('folder/', ['a', 'b'])
-  var cnt = 0
+  const keyStream = s3Files.createKeyStream('folder/', ['a', 'b'])
+  let cnt = 0
   keyStream.on('data', function (chunk) {
     if (cnt === 0) child.equal(chunk.toString(), 'folder/a')
     if (cnt === 1) child.equal(chunk.toString(), 'folder/b')
@@ -31,8 +31,8 @@ t.test('keyStream', function (child) {
 })
 
 t.test('keyStream without folder having trailing slash', function (child) {
-  var keyStream = s3Files.createKeyStream('folder', ['a', 'b'])
-  var cnt = 0
+  const keyStream = s3Files.createKeyStream('folder', ['a', 'b'])
+  let cnt = 0
   keyStream.on('data', function (chunk) {
     if (cnt === 0) child.equal(chunk.toString(), 'folder/a')
     if (cnt === 1) child.equal(chunk.toString(), 'folder/b')
@@ -44,8 +44,8 @@ t.test('keyStream without folder having trailing slash', function (child) {
 })
 
 t.test('keyStream without folder', function (child) {
-  var keyStream = s3Files.createKeyStream('', ['a', 'b'])
-  var cnt = 0
+  const keyStream = s3Files.createKeyStream('', ['a', 'b'])
+  let cnt = 0
   keyStream.on('data', function (chunk) {
     if (cnt === 0) child.equal(chunk.toString(), 'a')
     if (cnt === 1) child.equal(chunk.toString(), 'b')
@@ -58,18 +58,18 @@ t.test('keyStream without folder', function (child) {
 
 // Filestream
 t.test('Filestream needs a bucket', function (child) {
-  var fileStream = s3Files.createFileStream()
+  let fileStream = s3Files.createFileStream()
   child.same(fileStream, null)
 
-  var keyStream = s3Files
+  const keyStream = s3Files
     .connect({ bucket: 'bucket' })
     .createKeyStream('folder/', ['a', 'b', 'c'])
 
-  var s = new PassThrough()
+  const s = new PassThrough()
   s.end('hi')
-  var readStream = { createReadStream: function () { return s } }
+  const readStream = { createReadStream: function () { return s } }
   s3Stub.getObject = function () { return readStream }
-  var cnt = 0
+  let cnt = 0
   fileStream = s3Files.createFileStream(keyStream)
   fileStream.on('data', function (chunk) {
     child.equal(chunk.data.toString(), 'hi')
