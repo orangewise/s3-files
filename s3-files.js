@@ -1,22 +1,21 @@
-var Stream = require('stream')
-var AWS = require('aws-sdk')
-var streamify = require('stream-array')
-var concat = require('concat-stream')
-var path = require('path')
+const Stream = require('stream')
+const { S3Client } = require('@aws-sdk/client-s3')
+const streamify = require('stream-array')
+const concat = require('concat-stream')
+const path = require('path')
 
-var s3Files = {}
+const s3Files = {}
 module.exports = s3Files
 
 s3Files.connect = function (opts) {
-  var self = this
+  const self = this
 
   if ('s3' in opts) {
     self.s3 = opts.s3
   } else {
-    AWS.config.update({
+    self.s3 = new S3Client({
       region: opts.region
     })
-    self.s3 = new AWS.S3()
   }
 
   self.bucket = opts.bucket
@@ -25,7 +24,7 @@ s3Files.connect = function (opts) {
 
 s3Files.createKeyStream = function (folder, keys) {
   if (!keys) return null
-  var paths = []
+  const paths = []
   keys.forEach(function (key) {
     if (folder) {
       paths.push(path.posix.join(folder, key))
@@ -37,13 +36,13 @@ s3Files.createKeyStream = function (folder, keys) {
 }
 
 s3Files.createFileStream = function (keyStream, preserveFolderPath) {
-  var self = this
+  const self = this
   if (!self.bucket) return null
 
-  var rs = new Stream()
+  const rs = new Stream()
   rs.readable = true
 
-  var fileCounter = 0
+  let fileCounter = 0
   keyStream.on('data', function (file) {
     fileCounter += 1
     if (fileCounter > 5) {
@@ -51,14 +50,14 @@ s3Files.createFileStream = function (keyStream, preserveFolderPath) {
     }
 
     // console.log('->file', file);
-    var params = { Bucket: self.bucket, Key: file }
-    var s3File = self.s3.getObject(params).createReadStream()
+    const params = { Bucket: self.bucket, Key: file }
+    const s3File = self.s3.getObject(params).createReadStream()
 
     s3File.pipe(
       concat(function buffersEmit (buffer) {
         // console.log('buffers concatenated, emit data for ', file);
-        var path = preserveFolderPath ? file : file.replace(/^.*[\\/]/, '')
-        rs.emit('data', { data: buffer, path: path })
+        const path = preserveFolderPath ? file : file.replace(/^.*[\\/]/, '')
+        rs.emit('data', { data: buffer, path })
       })
     )
     s3File.on('end', function () {

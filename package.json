@@ -1,6 +1,6 @@
 {
   "name": "s3-files",
-  "version": "2.0.3",
+  "version": "3.0.0",
   "description": "Stream selected files from an Amazon S3 bucket/folder",
   "main": "s3-files.js",
   "scripts": {
@@ -21,14 +21,14 @@
     "url": "https://github.com/orangewise/s3-files.git"
   },
   "dependencies": {
-    "aws-sdk": "^2.449.0",
+    "@aws-sdk/client-s3": "^3.405.0",
     "concat-stream": "^2.0.0",
     "stream-array": "^1.1.2"
   },
   "devDependencies": {
-    "proxyquire": "^2.1.0",
-    "sinon": "^7.3.2",
-    "standard": "^12.0.1",
-    "tap": "^13.1.2"
+    "proxyquire": "^2.1.3",
+    "sinon": "^15.2.0",
+    "standard": "^17.1.0",
+    "tap": "^16.3.8"
   }
 }

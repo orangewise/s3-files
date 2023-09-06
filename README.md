@@ -96,7 +96,7 @@ npm test -- --cov --coverage-report=lcov
 ```
 
 
-[aws-sdk-url]: http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/node-configuring.html
+[aws-sdk-url]: https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/configuring-the-jssdk.html
 [npm-badge]: https://badge.fury.io/js/s3-files.svg
 [npm-url]: https://badge.fury.io/js/s3-files
 [travis-badge]: https://travis-ci.org/orangewise/s3-files.svg?branch=master
