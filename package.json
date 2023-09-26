@@ -1,6 +1,6 @@
 {
   "name": "s3-files",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Stream selected files from an Amazon S3 bucket/folder",
   "main": "s3-files.js",
   "scripts": {

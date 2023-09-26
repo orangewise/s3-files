@@ -67,8 +67,13 @@ t.test('Filestream needs a bucket', function (child) {
 
   const s = new PassThrough()
   s.end('hi')
-  const readStream = { createReadStream: function () { return s } }
-  s3Stub.getObject = function () { return readStream }
+  s3Stub.send = function () {
+    return new Promise(function (resolve) {
+      resolve({
+        Body: s
+      })
+    })
+  }
   let cnt = 0
   fileStream = s3Files.createFileStream(keyStream)
   fileStream.on('data', function (chunk) {

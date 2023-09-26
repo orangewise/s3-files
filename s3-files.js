@@ -1,5 +1,5 @@
 const Stream = require('stream')
-const { S3Client } = require('@aws-sdk/client-s3')
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3')
 const streamify = require('stream-array')
 const concat = require('concat-stream')
 const path = require('path')
@@ -43,7 +43,7 @@ s3Files.createFileStream = function (keyStream, preserveFolderPath) {
   rs.readable = true
 
   let fileCounter = 0
-  keyStream.on('data', function (file) {
+  keyStream.on('data', async function (file) {
     fileCounter += 1
     if (fileCounter > 5) {
       keyStream.pause() // we add some 'throttling' there
@@ -51,7 +51,7 @@ s3Files.createFileStream = function (keyStream, preserveFolderPath) {
 
     // console.log('->file', file);
     const params = { Bucket: self.bucket, Key: file }
-    const s3File = self.s3.getObject(params).createReadStream()
+    const { Body: s3File } = await self.s3.send(new GetObjectCommand(params))
 
     s3File.pipe(
       concat(function buffersEmit (buffer) {
