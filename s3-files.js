@@ -51,30 +51,36 @@ s3Files.createFileStream = function (keyStream, preserveFolderPath) {
 
     // console.log('->file', file);
     const params = { Bucket: self.bucket, Key: file }
-    const { Body: s3File } = await self.s3.send(new GetObjectCommand(params))
+    try {
+      const { Body: s3File } = await self.s3.send(new GetObjectCommand(params))
 
-    s3File.pipe(
-      concat(function buffersEmit (buffer) {
-        // console.log('buffers concatenated, emit data for ', file);
-        const path = preserveFolderPath ? file : file.replace(/^.*[\\/]/, '')
-        rs.emit('data', { data: buffer, path })
+      s3File.pipe(
+        concat(function buffersEmit (buffer) {
+          // console.log('buffers concatenated, emit data for ', file);
+          const path = preserveFolderPath ? file : file.replace(/^.*[\\/]/, '')
+          rs.emit('data', { data: buffer, path })
+        })
+      )
+      s3File.on('end', function () {
+        fileCounter -= 1
+        if (keyStream.isPaused()) {
+          keyStream.resume()
+        }
+        if (fileCounter < 1) {
+          // console.log('all files processed, emit end');
+          rs.emit('end')
+        }
       })
-    )
-    s3File.on('end', function () {
-      fileCounter -= 1
-      if (keyStream.isPaused()) {
-        keyStream.resume()
-      }
-      if (fileCounter < 1) {
-        // console.log('all files processed, emit end');
-        rs.emit('end')
-      }
-    })
 
-    s3File.on('error', function (err) {
+      s3File.on('error', function (err) {
+        err.file = file
+        rs.emit('error', err)
+      })
+    } catch (err) {
+      keyStream.pause()
       err.file = file
       rs.emit('error', err)
-    })
+    }
   })
   return rs
 }
