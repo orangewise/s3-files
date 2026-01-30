@@ -97,4 +97,27 @@ t.test('Filestream needs a bucket', function (child) {
   })
 })
 
+t.test('s3 GetObject rejection emits error and ends stream', (child) => {
+  s3Stub.send = function () {
+    return Promise.reject(new Error('GetObject failed'))
+  }
+
+  const keyStream = s3Files
+    .connect({ bucket: 'bucket' })
+    .createKeyStream('folder/', ['a', 'b', 'c'])
+
+  const fileStream = s3Files.createFileStream(keyStream)
+
+  const errors = []
+  fileStream.on('error', (err) => {
+    errors.push(err)
+  })
+  fileStream.on('end', () => {
+    child.ok(errors.length > 0, 'at least one error emitted')
+    child.equal(errors[0].message, 'GetObject failed')
+    child.equal(errors[0].file, 'folder/a')
+    child.end()
+  })
+})
+
 t.end()
