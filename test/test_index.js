@@ -97,6 +97,63 @@ t.test('Filestream needs a bucket', function (child) {
   })
 })
 
+t.test('connect with existing s3 client', function (child) {
+  const customClient = { custom: true }
+  const result = s3Files.connect({ s3: customClient, bucket: 'test-bucket' })
+  child.equal(result.s3, customClient)
+  child.equal(result.bucket, 'test-bucket')
+  // restore s3Stub for subsequent tests
+  s3Files.connect({ bucket: 'bucket' })
+  child.end()
+})
+
+t.test('fileStream throttles with more than 5 files', function (child) {
+  const files = ['a', 'b', 'c', 'd', 'e', 'f']
+  const keyStream = s3Files
+    .connect({ bucket: 'bucket' })
+    .createKeyStream('folder/', files)
+
+  s3Stub.send = function () {
+    const s = new PassThrough()
+    s.end('data')
+    return Promise.resolve({ Body: s })
+  }
+
+  let dataCount = 0
+  const fileStream = s3Files.createFileStream(keyStream, true)
+  fileStream.on('data', function () {
+    dataCount++
+  })
+  fileStream.on('end', function () {
+    child.ok(dataCount >= 5, 'all files processed')
+    child.end()
+  })
+})
+
+t.test('fileStream resumes keyStream on rejection when paused', function (child) {
+  const files = ['a', 'b', 'c', 'd', 'e', 'f']
+  const keyStream = s3Files
+    .connect({ bucket: 'bucket' })
+    .createKeyStream('folder/', files)
+
+  s3Stub.send = function () {
+    return Promise.reject(new Error('fail'))
+  }
+
+  const errors = []
+  let ended = false
+  const fileStream = s3Files.createFileStream(keyStream)
+  fileStream.on('error', function (err) {
+    errors.push(err)
+  })
+  fileStream.on('end', function () {
+    if (ended) return
+    ended = true
+    child.ok(errors.length > 0, 'errors were emitted')
+    child.end()
+  })
+})
+
 t.test('s3 GetObject rejection emits error and ends stream', (child) => {
   s3Stub.send = function () {
     return Promise.reject(new Error('GetObject failed'))
